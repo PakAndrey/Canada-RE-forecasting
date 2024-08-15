@@ -99,7 +99,7 @@ def transform(df, transform_dict):
     return df
 
 # Main ETL pipeline function that combines extraction, transformation, and lag creation
-def etl_pipeline(extraction_function, transform_dict=None, freq='M', num_lags=13, lagged_cols=None, **kwargs):
+def etl_pipeline(extraction_function, transform_dict=None, freq='MS', num_lags=13, lagged_cols=None, **kwargs):
     """
     Extracts, transforms, and processes data through a customizable ETL pipeline.
 
