@@ -49,13 +49,13 @@ def extract_data_from_CREA(file_path, sheet_name, in_col, new_names=None):
     Returns:
     - pd.DataFrame: A DataFrame containing the extracted and processed data.
     """
-    df_v = pd.read_excel(file_path, sheet_name=sheet_name)
-    df_v['Date'] = pd.to_datetime(df_v['Date'], format='%b %y')
-    df_v.set_index('Date', inplace=True)
+    df = pd.read_excel(file_path, sheet_name=sheet_name)
+    df['Date'] = pd.to_datetime(df['Date'], format='%b %y')
+    df.set_index('Date', inplace=True)
 
-    df_v = pd.DataFrame(df_v[in_col]).dropna()
-    df_v.columns = new_names if new_names else in_col
-    return df_v
+    df = pd.DataFrame(df[in_col]).dropna()
+    df.columns = new_names if new_names else in_col
+    return df
 
 # Function to create lagged versions of specified columns in a DataFrame
 def make_lags(df, num_lags, lagged_cols=None):
@@ -74,7 +74,7 @@ def make_lags(df, num_lags, lagged_cols=None):
     
     for col in lagged_cols:
         for lag in range(1, num_lags + 1):
-            df[f"{col}_lag_{lag}"] = df[col].shift(lag)
+            df[f"{col} lag {lag}"] = df[col].shift(lag)
 
     return df
 
@@ -93,13 +93,13 @@ def transform(df, transform_dict):
     for col, funcs in transform_dict.items():
         if isinstance(funcs, list):
             for func in funcs:
-                df[f"{col}_{func.__name__}"] = pd.DataFrame(df[col]).apply(func)
+                df[f"{col} {func.__name__}"] = pd.DataFrame(df[col]).apply(func)
         else:
-            df[f"{col}_{funcs.__name__}"] = pd.DataFrame(df[col]).apply(funcs)
+            df[f"{col} {funcs.__name__}"] = pd.DataFrame(df[col]).apply(funcs)
     return df
 
 # Main ETL pipeline function that combines extraction, transformation, and lag creation
-def etl_pipeline(extraction_function, transform_dict=None, freq='MS', num_lags=13, lagged_cols=None, **kwargs):
+def etl_pipeline(extraction_function, transform_dict=None, freq='M', num_lags=18, lagged_cols=None, **kwargs):
     """
     Extracts, transforms, and processes data through a customizable ETL pipeline.
 
@@ -157,5 +157,5 @@ def rolling_mean(x):
 def compose(f, g):
     def inner(x):
         return f(g(x))
-    inner.__name__ = f"{f.__name__}_{g.__name__}"
+    inner.__name__ = f"{f.__name__} {g.__name__}"
     return inner
