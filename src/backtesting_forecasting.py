@@ -19,7 +19,7 @@ def hist_forecast(df, target, features, split_time, horizon, y_lags, model, retr
     - list: The forecasted values.
     """
     # Ensure lagged features are included
-    lagged_features = [f"{target}_lag_{j}" for j in range(y_lags, 0, -1) if f"{target}_lag_{j}" not in features]
+    lagged_features = [f"{target} lag {j}" for j in range(y_lags, 0, -1) if f"{target} lag {j}" not in features]
     features = lagged_features + features
 
     # Split the data into training and validation sets
@@ -99,7 +99,7 @@ def predict(df, target, features, horizon, y_lags, model, retrain=True):
     )
 
     # Ensure lagged features are included
-    lagged_features = [f"{target}_lag_{j}" for j in range(y_lags, 0, -1) if f"{target}_lag_{j}" not in features]
+    lagged_features = [f"{target} lag {j}" for j in range(y_lags, 0, -1) if f"{target} lag {j}" not in features]
     features = lagged_features + features
 
     # Prepare the training set

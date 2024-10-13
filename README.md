@@ -1,15 +1,14 @@
-# Canadian Home Price Benchmark Prediction 
+# Forecasting Canadian Real Estate Trends
 
-This repository focuses on predicting the MLS Composite Home Price Benchmark in Canada, which represents the price trajectory of a typical home in the country. The objective is to identify leading economic indicators and build a forecasting model that provides a 6-month ahead prediction of home prices.
+The Canadian housing market has garnered significant attention, especially in recent years due to shifting economic conditions. This repository is dedicated to forecasting key real estate trends, including Toronto's median rent prices and the MLS Composite Home Price Benchmark, which tracks the price trajectory of a typical home across Canada.
 
 ## Overview
-
-The Canadian housing market has been a topic of much discussion, particularly in recent years due to fluctuating economic conditions. This project aims to leverage key economic indicators such as mortgage rates and money supply (M2++) to forecast the national home price benchmark with a 6-month horizon.
 
 - data/ :                           Directory containing datasets
 - src/ETL.py :                         Scripts for data extraction, transformation, and loading
 - src/backtesting_forecasting.py :     Scripts for forecasting and evaluating predictive models
-- HPI_forecasting.ipynb :             Jupyter notebook for exploration, analysis, modelling and forecasting
+- HPI_forecasting.ipynb :             Jupyter notebook for exploration, analysis, modelling and forecasting of MLS Composite Home Price Benchmark in Canada
+- Toronto_rent_forecasting.ipynb :    Jupyter notebook for exploration, analysis, modelling and forecasting of Toronto's median rent prices
 - README.md :                         Project overview and instructions
 - requirements.txt :                   Python package dependencies
 
