@@ -1,13 +1,5 @@
 import streamlit as st
 import pandas as pd
-import numpy as np
-
-from src.ETL import *
-
-from darts.models import LinearRegressionModel
-from darts import TimeSeries, concatenate
-from darts.metrics import rmse,  mase, mape,r2_score
-from darts.dataprocessing.transformers import Mapper, Diff
 
 import plotly.express as px
 import plotly.graph_objects as go
@@ -15,70 +7,18 @@ import plotly.graph_objects as go
 from sklearn.linear_model import LinearRegression
 
 ROOT_PATH = 'data'
-# ROOT_PATH = 'data Toronto rents'
 
-df1 = etl_pipeline(extract_data_from_HS_json, file_path = f'{ROOT_PATH}/rent.json', cols = ['price_rent'], 
-                            new_names=['Median Rent Price'],  
-                            transform_dict = {"Median Rent Price" : growth(1)},
-                            num_lags = 13, 
-                            lagged_cols = ['Median Rent Price growth1']
-                            )
+
+df = pd.read_csv(f'{ROOT_PATH}/forecast.csv')
+df["Date"] = pd.to_datetime(df["Date"]).dt.date
+
+df_cov = pd.read_csv(f'{ROOT_PATH}/df_cov.csv')
+df_cov["Date"] = pd.to_datetime(df_cov["Date"])
+df_cov.set_index("Date", inplace=True)
+
 target = "Median Rent Price growth1"
-
-df_cov = df1.join(etl_pipeline(extract_data_from_StatsCanada_API, vector_id = 1235049756, latest_n = 240, new_name = "Unemployment rate",
-                            transform_dict = {"Unemployment rate": [diff(1)],}
-                            ))
-
-df_cov = df_cov.join(etl_pipeline(extract_data_from_StatsCanada_API, vector_id = 111955499, latest_n = 240, new_name = "NHPI",
-                                     transform_dict = {"NHPI": [growth(1)]}))
-
-df_cov = df_cov.join(etl_pipeline(extract_data_from_HS_json, file_path = f'{ROOT_PATH}/rent.json', cols = ['rent_count', 'rent_listing_count'], 
-                            new_names=['Total Leased', "New Listings"]))
-
-df_cov["LNLR"] = df_cov["Total Leased"] / df_cov["New Listings"]
-df_cov = make_lags(df_cov, 12, ["LNLR",])
-df_cov = df_cov.ffill().bfill()
-df_cov = df_cov[sorted(df_cov.columns)]
-
-
 features = ["Unemployment rate diff1", "NHPI growth1", "LNLR", ] 
 
-y = TimeSeries.from_dataframe(df_cov, value_cols=target)
-y1 = TimeSeries.from_dataframe(df_cov, value_cols="Median Rent Price")
-
-cov = TimeSeries.from_dataframe(df_cov, value_cols = features)
-
-LR = LinearRegressionModel(    
-    lags=12, 
-    lags_future_covariates={"Unemployment rate diff1": [-5],  "NHPI growth1": [-3,-15], "LNLR": [-3],  },  
-    output_chunk_length=1,)
-
-
-LR.fit(y, future_covariates=cov)
-forecast = LR.predict(3, y, future_covariates=cov)
-
-
-def get_forecast(y, f, inverse_transform=True):
-    if inverse_transform:
-        to_exp = Mapper(lambda x: np.exp(x))
-        f = to_exp.transform(f.cumsum()) * y.last_value()
-
-    f = f.with_columns_renamed("Median Rent Price growth1", "Median Rent Price")
-    f = f.prepend_values([y.last_value()])
-    y = y.pd_dataframe().reset_index()
-    y['Data Type'] = 'Actual'
-    f = f.pd_dataframe().reset_index()
-    f['Data Type'] = 'Forecast'
-
-    df = pd.concat([y,f], ignore_index=True, axis=0)
-    df["Date"] = pd.to_datetime(df["Date"]).dt.date
-    df["Median Rent Price"] = df["Median Rent Price"].astype(int)
-    df.to_csv(f'{ROOT_PATH}/forecast.csv')
-
-    return df
-
-
-df = get_forecast(y1, forecast)
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
@@ -147,11 +87,21 @@ st.header("Rent Price and Leading Indicators", divider="gray")
 
 selected_feature = st.selectbox("Choose a feature:", features)
 
-''
-''
-''
+# Lag Selection
+max_lag = max(
+    int(col.split("lag")[1].strip()) if "lag" in col else 0
+    for col in df_cov.columns if selected_feature in col
+)
+selected_lag = st.slider("Choose a lag value:", 0, max_lag, 0)
 
-def plot_line_chart(df, feature, target):
+
+def plot_line_chart(df, feature, lag, target):
+    col_name = feature if lag == 0 else f"{feature} lag {lag}"
+    
+    if col_name not in df.columns:
+        st.warning(f"Column '{col_name}' not found in the dataset.")
+        return go.Figure()
+    
     # Plotly Line Chart
     fig = go.Figure()
 
@@ -170,9 +120,9 @@ def plot_line_chart(df, feature, target):
     fig.add_trace(
         go.Scatter(
             x=df.index,
-            y=df[feature],
+            y=df[col_name],
             mode="lines",
-            name=feature,
+            name=col_name,
             line=dict(color="black"),
             yaxis="y2",  # Link to secondary y-axis
         )
@@ -180,7 +130,7 @@ def plot_line_chart(df, feature, target):
 
     # Layout for Dual Axes
     fig.update_layout(
-        title= target + " and " + feature,
+        title= target + " and " + col_name,
         xaxis=dict(title="Date"),
         yaxis=dict(
             title=target,
@@ -208,11 +158,7 @@ def plot_line_chart(df, feature, target):
     # Display Plotly Chart in Streamlit
     st.plotly_chart(fig, use_container_width=True)
 
-# feats = ["Unemployment rate", "NHPI"]
-plot_line_chart(df_cov, selected_feature, "Median Rent Price")
-
-# plot_line_chart(df_cov, "LNLR", "Median Rent Price growth1")
-
+plot_line_chart(df_cov, selected_feature, selected_lag, target)
 
 # Define the function using Plotly
 def plot_target_covariates(df, selected_feature, selected_lag, target):
@@ -231,8 +177,8 @@ def plot_target_covariates(df, selected_feature, selected_lag, target):
         df,
         x=col_name,
         y=target,
-        title=f"Scatter Plot: {col_name} vs {target}",
-        labels={col_name: selected_feature, target: target},
+        # title=f"Scatter Plot: {col_name} vs {target}",
+        labels={col_name: col_name, target: target},
     )
     
     # Perform Linear Regression to get the regression line
@@ -267,12 +213,6 @@ def plot_target_covariates(df, selected_feature, selected_lag, target):
 # Sidebar Controls
 # selected_feature2 = st.selectbox("Choose a feature:", features)
 
-# Lag Selection
-max_lag = max(
-    int(col.split("lag")[1].strip()) if "lag" in col else 0
-    for col in df_cov.columns if selected_feature in col
-)
-selected_lag = st.slider("Choose a lag value:", 0, max_lag, 0)
 
 # Generate Plot
 fig = plot_target_covariates(df_cov, selected_feature, selected_lag, target)
