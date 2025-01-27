@@ -1,8 +1,37 @@
 import numpy as np
 import pandas as pd
+import requests
+import json
+
+# def download_csv_from_StatsCanada(pid, data_path):
+#     url = f"https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV/{pid}/en"
+#     response = requests.get(url)
+
+#     # Check the response status
+#     if response.status_code == 200:
+#         # Parse the JSON response
+#         result = response.json()
+#         if result["status"] == "SUCCESS":
+#             # Download the ZIP file
+#             zip_response = requests.get(result["object"])
+#             if zip_response.status_code == 200:
+#                 # Extract the ZIP file
+#                 with zipfile.ZipFile(io.BytesIO(zip_response.content)) as z:
+#                     z.extractall(data_path) 
+#                 print(f"CSV file extracted to {data_path}/{pid}.csv folder.")
+#             else:
+#                 print(f"Failed to download ZIP file. Status Code: {zip_response.status_code}")
+#         else:
+#             print(f"Failed to retrieve CSV URL. API Status: {result['status']}")
+#     else:
+#         print(f"Failed to connect to API. HTTP Status Code: {response.status_code}")
+
+# tables = ["14100383", "18100205", "18100004"]
+# for table in tables:
+#     download_csv_from_StatsCanada(table, ROOT_PATH)
 
 # Function to extract and process data from Statistics Canada CSV files
-def extract_data_from_StatsCanada(file_path, in_col=None, out_cols=None, new_names=None, filters=None):
+def extract_data_from_StatsCanada_CSV(file_path, in_col=None, out_cols=None, new_names=None, filters=None):
     """
     Extracts and processes data from a Statistics Canada CSV file.
 
@@ -50,12 +79,131 @@ def extract_data_from_CREA(file_path, sheet_name, in_col, new_names=None):
     - pd.DataFrame: A DataFrame containing the extracted and processed data.
     """
     df = pd.read_excel(file_path, sheet_name=sheet_name)
-    df['Date'] = pd.to_datetime(df['Date'], format='%b %y')
+    try:
+        df['Date'] = pd.to_datetime(df['Date'], format='%b %y')
+    except ValueError:
+        df['Date'] = pd.to_datetime(df['Date'], format='%y-%b') 
     df.set_index('Date', inplace=True)
 
     df = pd.DataFrame(df[in_col]).dropna()
     df.columns = new_names if new_names else in_col
     return df
+
+def clean_integer(input_str):
+
+    # Ensure input is a string, remove commas, strip any spaces
+    cleaned_str = str(input_str).replace(',', '')
+    
+    # Convert the cleaned string to an integer
+    return float(cleaned_str)
+
+def extract_data_from_csv(file_path, in_col=None, new_name=None):
+
+    df= pd.read_csv(file_path)
+    try:
+        df['Date'] = pd.to_datetime(df['Date'], format='%b-%y')
+    except ValueError:
+        df['Date'] = pd.to_datetime(df['Date'], format='%y-%b')
+    df.set_index('Date', inplace=True)
+    df = df[in_col].applymap(clean_integer).dropna()
+    df.columns = (new_name if new_name else in_col)
+    # print(df)
+    return df
+
+def extract_data_from_StatsCanada_API(vector_id, latest_n, new_name):
+    """
+    Fetches data from the API and converts it to a pandas DataFrame.
+
+    Parameters:
+    - vector_id (int): The vector ID for the data request.
+    - latest_n (int): The number of latest periods to retrieve.
+
+    Returns:
+    - pd.DataFrame: A DataFrame containing the fetched data with columns "Date" and "Value".
+    """
+    # API endpoint
+    url = "https://www150.statcan.gc.ca/t1/wds/rest/getDataFromVectorsAndLatestNPeriods"
+    
+    # Payload for the POST request
+    post_body = [{"vectorId": vector_id, "latestN": latest_n}]
+    
+    try:
+        # Send the POST request
+        response = requests.post(url, json=post_body)
+        response.raise_for_status()  # Raise an exception for HTTP errors
+        
+        # Parse the JSON response
+        data = response.json()
+        
+        # Ensure the response contains the expected structure
+        if data[0]["status"] != "SUCCESS":
+            raise ValueError("API response indicates failure: " + data[0].get("message", "Unknown error"))
+        
+        # Extract vector data points
+        vector_data = data[0]["object"]["vectorDataPoint"]
+        
+        # Convert to DataFrame
+        df = pd.DataFrame(vector_data)
+        df = df.rename(columns={"refPer": "Date", "value": new_name})[["Date", new_name]]
+        
+        # df['Date'] = pd.to_datetime(['-'.join(x.split()[::-1]) for x in df['REF_DATE']])
+        df['Date'] = pd.to_datetime(df['Date'])
+
+        df.sort_values(by='Date', inplace=True)
+        
+        df = df.set_index('Date')
+        return df
+    
+    except requests.exceptions.RequestException as e:
+        print(f"HTTP request failed: {e}")
+        return None
+    except ValueError as e:
+        print(f"Data error: {e}")
+        return None
+    except KeyError as e:
+        print(f"Unexpected data structure: {e}")
+        return None
+
+def extract_data_from_HS_json(file_path, cols, new_names):
+    """
+    Extract data from JSON, filter columns, rename them, and return a DataFrame.
+    
+    Parameters:
+    - file_path (str): Path to the JSON file.
+    - cols (list): List of column names to extract from the JSON.
+    - new_names (list): New names for the extracted columns.
+    
+    Returns:
+    - pd.DataFrame: Processed DataFrame with renamed columns.
+    """
+    # Load the JSON file
+    with open(file_path, 'r') as file:
+        data = json.load(file)
+    
+    # Extract the chart data
+    chart_data = data.get("data", {}).get("chart", [])
+    
+    if not chart_data:
+        raise ValueError("No 'chart' data found in the JSON.")
+    
+    # Convert to a DataFrame
+    df = pd.DataFrame(chart_data)
+    
+    # Ensure 'period' is included for Date conversion
+    if 'period' not in cols:
+        cols = ['period'] + cols
+        new_names = ['Date'] + new_names
+    
+    # Filter the DataFrame and rename columns
+    df = df[cols]
+    df.columns = new_names
+    
+    df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m')
+    df.set_index('Date', inplace=True)
+    df = df.applymap(clean_integer)
+    
+    return df
+
 
 # Function to create lagged versions of specified columns in a DataFrame
 def make_lags(df, num_lags, lagged_cols=None):
