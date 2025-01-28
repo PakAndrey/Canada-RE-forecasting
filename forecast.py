@@ -15,9 +15,9 @@ df1 = etl_pipeline(extract_data_from_HS_json, file_path = f'{ROOT_PATH}/rent.jso
                             new_names=['Median Rent Price'],  
                             transform_dict = {"Median Rent Price" : growth(1)},
                             num_lags = 13, 
-                            lagged_cols = ['Median Rent Price growth1']
+                            lagged_cols = ['Median Rent Price growth']
                             )
-target = "Median Rent Price growth1"
+target = "Median Rent Price growth"
 
 df_cov = df1.join(etl_pipeline(extract_data_from_StatsCanada_API, vector_id = 1235049756, latest_n = 240, new_name = "Unemployment rate",
                             transform_dict = {"Unemployment rate": [diff(1)],}
@@ -35,7 +35,7 @@ df_cov = df_cov.ffill().bfill()
 df_cov = df_cov[sorted(df_cov.columns)]
 
 
-features = ["Unemployment rate diff1", "NHPI growth1", "LNLR", ] 
+features = ["Unemployment rate diff", "NHPI growth", "LNLR", ] 
 
 y = TimeSeries.from_dataframe(df_cov, value_cols=target)
 y1 = TimeSeries.from_dataframe(df_cov, value_cols="Median Rent Price")
@@ -44,7 +44,7 @@ cov = TimeSeries.from_dataframe(df_cov, value_cols = features)
 
 LR = LinearRegressionModel(    
     lags=12, 
-    lags_future_covariates={"Unemployment rate diff1": [-5],  "NHPI growth1": [-3,-15], "LNLR": [-3],  },  
+    lags_future_covariates={"Unemployment rate diff": [-5],  "NHPI growth": [-3,-15], "LNLR": [-3],  },  
     output_chunk_length=1,)
 
 
@@ -57,7 +57,7 @@ def get_forecast(y, f, inverse_transform=True):
         to_exp = Mapper(lambda x: np.exp(x))
         f = to_exp.transform(f.cumsum()) * y.last_value()
 
-    f = f.with_columns_renamed("Median Rent Price growth1", "Median Rent Price")
+    f = f.with_columns_renamed(target, "Median Rent Price")
     f = f.prepend_values([y.last_value()])
     y = y.pd_dataframe().reset_index()
     y['Data Type'] = 'Actual'

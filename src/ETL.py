@@ -1,4 +1,3 @@
-import numpy as np
 import pandas as pd
 import requests
 import json
@@ -105,7 +104,7 @@ def extract_data_from_csv(file_path, in_col=None, new_name=None):
     except ValueError:
         df['Date'] = pd.to_datetime(df['Date'], format='%y-%b')
     df.set_index('Date', inplace=True)
-    df = df[in_col].applymap(clean_integer).dropna()
+    df = df[in_col].map(clean_integer).dropna()
     df.columns = (new_name if new_name else in_col)
     # print(df)
     return df
@@ -200,7 +199,7 @@ def extract_data_from_HS_json(file_path, cols, new_names):
     
     df['Date'] = pd.to_datetime(df['Date'], format='%Y-%m')
     df.set_index('Date', inplace=True)
-    df = df.applymap(clean_integer)
+    df = df.map(clean_integer)
     
     return df
 
@@ -247,7 +246,7 @@ def transform(df, transform_dict):
     return df
 
 # Main ETL pipeline function that combines extraction, transformation, and lag creation
-def etl_pipeline(extraction_function, transform_dict=None, freq='M', num_lags=18, lagged_cols=None, **kwargs):
+def etl_pipeline(extraction_function, transform_dict=None, freq='ME', num_lags=18, lagged_cols=None, **kwargs):
     """
     Extracts, transforms, and processes data through a customizable ETL pipeline.
 
@@ -271,7 +270,6 @@ def etl_pipeline(extraction_function, transform_dict=None, freq='M', num_lags=18
     # Step 3: Apply transformations if provided
     if transform_dict:
         transformed_df = transform(transformed_df, transform_dict)
-    
     # Step 4: Create lagged features if specified
     transformed_df = make_lags(transformed_df, num_lags, lagged_cols)
     
@@ -279,14 +277,14 @@ def etl_pipeline(extraction_function, transform_dict=None, freq='M', num_lags=18
 
 def growth(x):
     def inner(series):
-        return np.log(series).diff(x)
-    inner.__name__ = f"growth{x}"
+        return series.pct_change(x) #np.log(series).diff(x)
+    inner.__name__ = f"growth{x}" if x > 1 else "growth"
     return inner
 
 def diff(x):
     def inner(series):
         return series.diff(x)
-    inner.__name__ = f"diff{x}"
+    inner.__name__ = f"diff{x}" if x > 1 else "diff"
     return inner
 
 def infl_adjusted(infl):

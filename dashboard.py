@@ -16,8 +16,8 @@ df_cov = pd.read_csv(f'{ROOT_PATH}/df_cov.csv')
 df_cov["Date"] = pd.to_datetime(df_cov["Date"])
 df_cov.set_index("Date", inplace=True)
 
-target = "Median Rent Price growth1"
-features = ["Unemployment rate diff1", "NHPI growth1", "LNLR", ] 
+target = "Median Rent Price growth"
+features = ["Unemployment rate diff", "NHPI growth", "LNLR", ] 
 
 
 # Set the title and favicon that appear in the Browser's tab bar.
@@ -112,7 +112,7 @@ def plot_line_chart(df, feature, lag, target):
             y=df[target],
             mode="lines",
             name=target,
-            line=dict(color="blue"),
+            # line=dict(color="blue"),
         )
     )
 
@@ -123,7 +123,7 @@ def plot_line_chart(df, feature, lag, target):
             y=df[col_name],
             mode="lines",
             name=col_name,
-            line=dict(color="black"),
+            # line=dict(color="black"),
             yaxis="y2",  # Link to secondary y-axis
         )
     )
@@ -134,13 +134,13 @@ def plot_line_chart(df, feature, lag, target):
         xaxis=dict(title="Date"),
         yaxis=dict(
             title=target,
-            titlefont=dict(color="blue"),
-            tickfont=dict(color="blue"),
+            # titlefont=dict(color="blue"),
+            # tickfont=dict(color="blue"),
         ),
         yaxis2=dict(
             title=feature,
-            titlefont=dict(color="black"),
-            tickfont=dict(color="black"),
+            # titlefont=dict(color="black"),
+            # tickfont=dict(color="black"),
             overlaying="y",  # Overlay on the first y-axis
             side="right",  # Position on the right
             showgrid=False,
