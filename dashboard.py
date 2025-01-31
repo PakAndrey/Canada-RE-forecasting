@@ -22,8 +22,8 @@ features = ["Unemployment rate diff", "NHPI growth", "LNLR", ]
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
-    page_title='Canadian property analytics',
-    page_icon=':flag_ca:', # This is an emoji shortcode. Could be a URL too.
+    page_title='Canadian Housing Market Trends',
+    page_icon=':flag-ca:', # This is an emoji shortcode. Could be a URL too.
 )
 
 
