@@ -32,11 +32,11 @@ st.set_page_config(
 
 # Set the title that appears at the top of the page.
 '''
-# Canadian housing market analytics
+# Forecasting Canadian Housing Market Trends
 
 The Canadian housing market has been a topic of much discussion, particularly 
 in recent years due to fluctuating economic conditions. This page focuses 
-on forecasting various real estate trends such as Toronto's median rent prices 
+on forecasting various property market trends such as Toronto's median condo rent prices 
 and the MLS Composite Home Price Benchmark in Canada, which represents the price 
 trajectory of a typical home in the country.
 '''
@@ -79,13 +79,7 @@ st.dataframe(filtered_df.tail(12))
 
 st.header("Rent Price and Leading Indicators", divider="gray")
 
-# countries = gdp_df['Country Code'].unique()
-
-# if not len(countries):
-#     st.warning("Select at least one country")
-
-
-selected_feature = st.selectbox("Choose a feature:", features)
+selected_feature = st.selectbox("Choose a leading indicator:", features)
 
 # Lag Selection
 max_lag = max(

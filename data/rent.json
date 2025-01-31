@@ -4,20 +4,6 @@
         "message": "",
         "chart": [
             {
-                "period": "2010-02",
-                "sold_count": "627",
-                "price_sold": "352000",
-                "list_days": "18",
-                "list_count": "1044",
-                "list_active": "1075",
-                "absorption_rate": 58.3,
-                "rent_ratio": "8.8",
-                "rent_count": "357",
-                "price_rent": "1690",
-                "rent_listing_count": "574",
-                "property_listing_dom": "26"
-            },
-            {
                 "period": "2010-03",
                 "sold_count": "843",
                 "price_sold": "342000",
@@ -2491,7 +2477,7 @@
                 "absorption_rate": 19.5,
                 "rent_ratio": "7.8",
                 "rent_count": "2049",
-                "price_rent": "2600",
+                "price_rent": "2595",
                 "rent_listing_count": "3660",
                 "property_listing_dom": "75"
             },
@@ -2511,17 +2497,17 @@
             },
             {
                 "period": "2025-01",
-                "sold_count": "232",
-                "price_sold": "649500",
-                "list_days": "43",
-                "list_count": "1497",
-                "list_active": "2754",
-                "absorption_rate": 8.4,
+                "sold_count": "294",
+                "price_sold": "650500",
+                "list_days": "41",
+                "list_count": "1716",
+                "list_active": "2805",
+                "absorption_rate": 10.5,
                 "rent_ratio": "7.8",
-                "rent_count": "1633",
+                "rent_count": "1955",
                 "price_rent": "2550",
-                "rent_listing_count": "3230",
-                "property_listing_dom": "84"
+                "rent_listing_count": "3562",
+                "property_listing_dom": "81"
             }
         ],
         "chart_axis": {
@@ -2530,8 +2516,8 @@
             "price_sold_max": 900000,
             "price_sold_min": 0,
             "price_rent_max": 10000,
-            "list_days_max": 86,
-            "property_dom_max": 168,
+            "list_days_max": 84,
+            "property_dom_max": 162,
             "list_days_min": 0,
             "property_dom_min": 0,
             "absorption_rate_max": 160,
@@ -3061,8 +3047,8 @@
             },
             {
                 "period": "2025-01",
-                "popularity_index_30": "35.36",
-                "sold_count": "232"
+                "popularity_index_30": "36.19",
+                "sold_count": "294"
             }
         ]
     },
@@ -3074,7 +3060,7 @@
         "API": "v5.38.26",
         "environment": "production",
         "server_group": "ovh_vpc",
-        "server": "OVH11"
+        "server": "OVH14"
     },
     "chart_cached": true,
     "chart_house_type_cached": true

@@ -1,5 +1,4 @@
 Date,Median Rent Price,Data Type
-2010-02-28,1690,Actual
 2010-03-31,1700,Actual
 2010-04-30,1700,Actual
 2010-05-31,1700,Actual
@@ -176,10 +175,10 @@ Date,Median Rent Price,Data Type
 2024-08-31,2700,Actual
 2024-09-30,2650,Actual
 2024-10-31,2600,Actual
-2024-11-30,2600,Actual
+2024-11-30,2595,Actual
 2024-12-31,2550,Actual
 2025-01-31,2550,Actual
 2025-01-31,2550,Forecast
-2025-02-28,2556,Forecast
+2025-02-28,2555,Forecast
 2025-03-31,2552,Forecast
-2025-04-30,2516,Forecast
+2025-04-30,2517,Forecast
