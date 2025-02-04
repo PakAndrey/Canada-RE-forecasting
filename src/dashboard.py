@@ -1,93 +1,61 @@
 import streamlit as st
 import pandas as pd
+import altair as alt
 
 import plotly.express as px
 import plotly.graph_objects as go
 
 from sklearn.linear_model import LinearRegression
 
-ROOT_PATH = 'data'
+def show_forecast(df, target):
+    min_date = df['Date'].min()
+    max_date = df['Date'].max()
 
+    from_date, to_date = st.slider(
+        'Which dates are you interested in?',
+        min_value=min_date,
+        max_value=max_date,
+        value=[df['Date'].iloc[-36], max_date])
 
-df = pd.read_csv(f'{ROOT_PATH}/forecast.csv')
-df["Date"] = pd.to_datetime(df["Date"]).dt.date
+    # Filter the data
+    filtered_df = df[(from_date <= df['Date']) & (df['Date'] <= to_date)].copy()
 
-df_cov = pd.read_csv(f'{ROOT_PATH}/df_cov.csv')
-df_cov["Date"] = pd.to_datetime(df_cov["Date"])
-df_cov.set_index("Date", inplace=True)
+    # **Calculate Dynamic Y-Axis Limits**
+    y_min = filtered_df[target].min() * 0.95  # Add margin
+    y_max = filtered_df[target].max() * 1.05  # Add margin
 
-target = "Median Rent Price growth"
-features = ["Unemployment rate diff", "NHPI growth", "LNLR", ] 
+    # **Base Line Chart with Forecast Legend**
+    line_chart = alt.Chart(filtered_df).mark_line().encode(
+        x=alt.X('Date:T', title="Date"),
+        y=alt.Y(f'{target}:Q', title=target, scale=alt.Scale(domain=[y_min, y_max])),  # **Dynamic y-axis**
+        color=alt.Color('Data Type:N', legend=alt.Legend(title="Legend",orient="bottom")),  # **Legend for Forecast**
+        strokeDash=alt.condition(
+            alt.datum["Data Type"] == "Forecast",  # Apply dashes only to Forecast
+            alt.value([0]),  # Dashed line
+            alt.value([0])  # Solid line
+        )
+    )
 
+    # **Hover Effect**
+    nearest = alt.selection_single(
+        fields=['Date'], 
+        nearest=True,  
+        on='mouseover',
+        empty='none'
+    )
 
-# Set the title and favicon that appear in the Browser's tab bar.
-st.set_page_config(
-    page_title='Canadian Housing Market Trends',
-    page_icon=':flag-ca:', # This is an emoji shortcode. Could be a URL too.
-)
+    hover_circles = alt.Chart(filtered_df).mark_circle(size=80).encode(
+        x='Date:T',
+        y=alt.Y(f'{target}:Q'),
+        tooltip=['Date:T', f'{target}:Q'],
+        opacity=alt.condition(nearest, alt.value(1), alt.value(0))
+    ).add_selection(nearest)  
 
+    # **Combine Layers**
+    final_chart = alt.layer(line_chart, hover_circles)
 
-# -----------------------------------------------------------------------------
-# Draw the actual page
-
-# Set the title that appears at the top of the page.
-'''
-# Forecasting Canadian Housing Market Trends
-
-The Canadian housing market has been a topic of much discussion, particularly 
-in recent years due to fluctuating economic conditions. This page focuses 
-on forecasting various property market trends such as Toronto's median condo rent prices 
-and the MLS Composite Home Price Benchmark in Canada, which represents the price 
-trajectory of a typical home in the country.
-'''
-
-# Add some spacing
-''
-''
-
-st.header('Median Rent Price in Toronto', divider='gray')
-
-''
-
-min_value = df['Date'].min()
-max_value = df['Date'].max()
-
-# print(min_value, max_value)
-
-from_year, to_year = st.slider(
-    'Which dates are you interested in?',
-    min_value=min_value,
-    max_value=max_value,
-    value=[df['Date'].iloc[-36], max_value])
-
-# Filter the data
-filtered_df = df[
-    (df['Date'] <= to_year)
-    & (from_year <= df['Date'])
-]
-
-st.line_chart(
-    filtered_df,
-    x='Date',
-    y='Median Rent Price',
-    color='Data Type',
-)
-
-st.dataframe(filtered_df.tail(12))
-
-
-
-st.header("Rent Price and Leading Indicators", divider="gray")
-
-selected_feature = st.selectbox("Choose a leading indicator:", features)
-
-# Lag Selection
-max_lag = max(
-    int(col.split("lag")[1].strip()) if "lag" in col else 0
-    for col in df_cov.columns if selected_feature in col
-)
-selected_lag = st.slider("Choose a lag value:", 0, max_lag, 0)
-
+    # Show Chart in Streamlit
+    st.altair_chart(final_chart, use_container_width=True)
 
 def plot_line_chart(df, feature, lag, target):
     col_name = feature if lag == 0 else f"{feature} lag {lag}"
@@ -152,7 +120,6 @@ def plot_line_chart(df, feature, lag, target):
     # Display Plotly Chart in Streamlit
     st.plotly_chart(fig, use_container_width=True)
 
-plot_line_chart(df_cov, selected_feature, selected_lag, target)
 
 # Define the function using Plotly
 def plot_target_covariates(df, selected_feature, selected_lag, target):
@@ -194,22 +161,15 @@ def plot_target_covariates(df, selected_feature, selected_lag, target):
     # Customize layout
     fig.update_layout(
         template="plotly_white",
-        height=600,
+        # height=600,
         legend=dict(
             orientation="h",
             yanchor="top",
             y=-0.2,
-            xanchor="left",
+            xanchor="center",
             x=0.5,
         ),
     )
-    return fig
-# Sidebar Controls
-# selected_feature2 = st.selectbox("Choose a feature:", features)
-
-
-# Generate Plot
-fig = plot_target_covariates(df_cov, selected_feature, selected_lag, target)
-
-# Display Plot
-st.plotly_chart(fig, use_container_width=True)
+    
+    # Display Plot
+    st.plotly_chart(fig, use_container_width=True)

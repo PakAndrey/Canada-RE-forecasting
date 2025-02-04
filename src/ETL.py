@@ -1,29 +1,63 @@
 import pandas as pd
 import requests
 import json
+import zipfile
+import io
 
-# def download_csv_from_StatsCanada(pid, data_path):
-#     url = f"https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV/{pid}/en"
-#     response = requests.get(url)
+def extract_from_RPS(file_path, in_col, sheet_name=0, new_name=None):
+    """
+    Reads an Excel file, skipping the first row and stopping at the first empty row.
+    Optionally extracts a single column and renames it if specified.
+    
+    Parameters:
+        filepath (str): Path to the Excel file.
+        sheet_name (int or str, optional): Sheet name or index. Default is the first sheet.
+        in_col (str): Column name to extract.
+        new_name (str, optional): New name for the extracted column.
+    
+    Returns:
+        pd.DataFrame or pd.Series: Processed DataFrame or Series with the required data.
+    """
+    df = pd.read_excel(file_path, sheet_name=sheet_name, skiprows=1)  # Skip first row
+    
+    # Find the first empty row (all NaN)
+    first_empty_idx = df.isnull().all(axis=1).idxmax()
+    
+    # If no empty row found, return full dataframe, else return up to the first empty row
+    df = df if df.isnull().all(axis=1).sum() == 0 else df.iloc[:first_empty_idx]
+    
+    df['Date'] = pd.to_datetime(df['Date'], format='%Y%m')
+    df.set_index('Date', inplace=True)
 
-#     # Check the response status
-#     if response.status_code == 200:
-#         # Parse the JSON response
-#         result = response.json()
-#         if result["status"] == "SUCCESS":
-#             # Download the ZIP file
-#             zip_response = requests.get(result["object"])
-#             if zip_response.status_code == 200:
-#                 # Extract the ZIP file
-#                 with zipfile.ZipFile(io.BytesIO(zip_response.content)) as z:
-#                     z.extractall(data_path) 
-#                 print(f"CSV file extracted to {data_path}/{pid}.csv folder.")
-#             else:
-#                 print(f"Failed to download ZIP file. Status Code: {zip_response.status_code}")
-#         else:
-#             print(f"Failed to retrieve CSV URL. API Status: {result['status']}")
-#     else:
-#         print(f"Failed to connect to API. HTTP Status Code: {response.status_code}")
+    # Extract specific column if provided
+    df = df[[in_col]]
+    if new_name:
+        df.columns = [new_name]
+
+    return df
+
+def download_csv_from_StatsCanada(pid, data_path):
+    url = f"https://www150.statcan.gc.ca/t1/wds/rest/getFullTableDownloadCSV/{pid}/en"
+    response = requests.get(url)
+
+    # Check the response status
+    if response.status_code == 200:
+        # Parse the JSON response
+        result = response.json()
+        if result["status"] == "SUCCESS":
+            # Download the ZIP file
+            zip_response = requests.get(result["object"])
+            if zip_response.status_code == 200:
+                # Extract the ZIP file
+                with zipfile.ZipFile(io.BytesIO(zip_response.content)) as z:
+                    z.extractall(data_path) 
+                print(f"CSV file extracted to {data_path}/{pid}.csv folder.")
+            else:
+                print(f"Failed to download ZIP file. Status Code: {zip_response.status_code}")
+        else:
+            print(f"Failed to retrieve CSV URL. API Status: {result['status']}")
+    else:
+        print(f"Failed to connect to API. HTTP Status Code: {response.status_code}")
 
 # tables = ["14100383", "18100205", "18100004"]
 # for table in tables:
@@ -287,12 +321,26 @@ def diff(x):
     inner.__name__ = f"diff{x}" if x > 1 else "diff"
     return inner
 
-def infl_adjusted(infl):
+def to_real(cpi, base_date = pd.Timestamp("20200131")):
     def inner(series):
-        df_ = pd.concat([series, infl], axis = 1)
-        return (df_.iloc[:,0] * df_.iloc[-1,1]/df_.iloc[:,1])
+        if base_date not in cpi.index:
+            raise ValueError("Base year CPI not found in the CPI series.")
+        if len(cpi.columns) >1:
+            raise ValueError("CPI has more than one column.")
+        base_cpi = cpi.loc[base_date].values[0]
+        return series * (base_cpi / cpi.loc[series.index].iloc[:,0])
     inner.__name__ = f"real"
     return inner
+
+def to_nominal(cpi, base_date = pd.Timestamp("20200131")):
+    def inner(series):
+        if base_date not in cpi.index:
+            raise ValueError("Base year CPI not found in the CPI series.")
+        base_cpi = cpi.loc[base_date].values[0]
+        return series * (cpi.loc[series.index].iloc[:,0] / base_cpi)
+    inner.__name__ = f"real"
+    return inner
+
 
 def rolling_mean(x):
     def inner(series):
