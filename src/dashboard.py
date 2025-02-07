@@ -33,7 +33,7 @@ def show_forecast(df, target):
     # **Base Line Chart with Forecast Legend**
     line_chart = alt.Chart(filtered_df).mark_line().encode(
         x=alt.X('Date:T', title="Date"),
-        y=alt.Y(f'{target}:Q', title=target, scale=alt.Scale(domain=[y_min, y_max])),  # **Dynamic y-axis**
+        y=alt.Y(f'{target}:Q', title=target, scale=alt.Scale(domain=[y_min, y_max]), axis=alt.Axis(format='$,.0f')),  # **Dynamic y-axis**
         color=alt.Color('Data Type:N', legend=alt.Legend(title="Legend",orient="bottom")),  # **Legend for Forecast**
         strokeDash=alt.condition(
             alt.datum["Data Type"] == "Forecast",  # Apply dashes only to Forecast
@@ -53,7 +53,10 @@ def show_forecast(df, target):
     hover_circles = alt.Chart(filtered_df).mark_circle(size=80).encode(
         x='Date:T',
         y=alt.Y(f'{target}:Q'),
-        tooltip=['Date:T', f'{target}:Q'],
+        tooltip=[
+            alt.Tooltip('Date:T', title="Date"),
+            alt.Tooltip(f'{target}:Q', title=target, format='$,.0f')  # 💰 Correctly formatted tooltip
+        ],
         opacity=alt.condition(nearest, alt.value(1), alt.value(0))
     ).add_selection(nearest)  
 
