@@ -4,11 +4,8 @@ import pandas as pd
 from src.dashboard import *
 
 
-ROOT_PATH = 'data'
+FORECAST_PATH = 'forecasts'
 
-
-df = pd.read_csv(f'{ROOT_PATH}/forecast.csv')
-df["Date"] = pd.to_datetime(df["Date"]).dt.date
 
 # Set the title and favicon that appear in the Browser's tab bar.
 st.set_page_config(
@@ -34,14 +31,18 @@ and the National Home Price Benchmark in Canada.
 ''
 
 
+df = load_forecast(f'{FORECAST_PATH}/forecast_hpi.csv')
+st.header('RPS National Home Price Benchmark in Canada', divider='gray')
+show_forecast(df, "RPS Home Price Benchmark")
+
 ''
+df = load_forecast(f'{FORECAST_PATH}/forecast_hpi_toronto.csv')
+st.header('MLS Condo Price Benchmark in Toronto', divider='gray')
+show_forecast(df, "MLS Condo Price Benchmark")
+
+''
+
+df = load_forecast(f'{FORECAST_PATH}/forecast.csv')
 st.header('Median Condo Rental Price in Toronto', divider='gray')
 show_forecast(df, "Median Rent Price")
 
-''
-
-df = pd.read_csv(f'{ROOT_PATH}/forecast_hpi.csv')
-df["Date"] = pd.to_datetime(df["Date"]).dt.date
-
-st.header('RPS National Home Price Benchmark in Canada', divider='gray')
-show_forecast(df, "RPS Home Price Benchmark")

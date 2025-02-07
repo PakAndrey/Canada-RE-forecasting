@@ -7,6 +7,12 @@ import plotly.graph_objects as go
 
 from sklearn.linear_model import LinearRegression
 
+def load_forecast(file_path):
+    # Load the data
+    df = pd.read_csv(file_path)
+    df["Date"] = pd.to_datetime(df["Date"]).dt.date
+    return df
+
 def show_forecast(df, target):
     min_date = df['Date'].min()
     max_date = df['Date'].max()
@@ -170,6 +176,6 @@ def plot_target_covariates(df, selected_feature, selected_lag, target):
             x=0.5,
         ),
     )
-    
+
     # Display Plot
     st.plotly_chart(fig, use_container_width=True)

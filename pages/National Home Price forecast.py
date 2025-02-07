@@ -3,13 +3,13 @@ import pandas as pd
 
 from src.dashboard import *
 
-ROOT_PATH = 'data'
+FORECAST_PATH = 'forecasts'
 
 
-df = pd.read_csv(f'{ROOT_PATH}/forecast_hpi.csv')
+df = pd.read_csv(f'{FORECAST_PATH}/forecast_hpi.csv')
 df["Date"] = pd.to_datetime(df["Date"]).dt.date
 
-df_cov = pd.read_csv(f'{ROOT_PATH}/df_cov_hpi.csv')
+df_cov = pd.read_csv(f'{FORECAST_PATH}/df_cov_hpi.csv')
 df_cov["Date"] = pd.to_datetime(df_cov["Date"])
 df_cov.set_index("Date", inplace=True)
 

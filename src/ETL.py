@@ -353,3 +353,13 @@ def compose(f, g):
         return f(g(x))
     inner.__name__ = f"{f.__name__} {g.__name__}"
     return inner
+
+# import yfinance as yf
+# def extract_data_from_yfinance(ticker, new_names=None):
+#     df = yf.download(ticker, start="2005-01-01", end="2025-01-17") #end="202-06-01"
+#     etf = df.Close.resample('M').mean() #.ewm(alpha=0.1).mean()
+#     # print(etf)
+
+#     df = pd.DataFrame(etf)
+#     df.columns = new_names if new_names else [ticker]
+#     return df
