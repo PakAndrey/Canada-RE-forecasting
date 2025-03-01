@@ -33,7 +33,6 @@ jobs:
         with:
           name: data
           path: data/
-
       - name: Upload Forecasts (Artifacts)
         uses: actions/upload-artifact@v3
         with:
