@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import os
 from src.ETL import *
 from darts.models import LinearRegressionModel
 from darts import TimeSeries
@@ -144,6 +144,9 @@ LR = LinearRegressionModel(
     lags_future_covariates=[-6],
     output_chunk_length=1,
 )
+
+
+os.makedirs("forecasts", exist_ok=True)
 
 
 def generate_forecast(df, target, features, model, horizon):
