@@ -2,75 +2,189 @@ import pandas as pd
 import numpy as np
 
 from src.ETL import *
-
 from darts.models import LinearRegressionModel
-from darts import TimeSeries, concatenate
-from darts.metrics import rmse,  mase, mape,r2_score
-from darts.dataprocessing.transformers import Mapper, Diff
+from darts import TimeSeries
+
+DATA_PATH = "data"
+FORECAST_PATH = "forecasts"
+
+target = "MLS Price Benchmark"
+
+df = etl_pipeline(
+    extract_data_from_CREA,
+    {
+        "file_path": f"{DATA_PATH}/MLS_HPI/Seasonally Adjusted.xlsx",
+        "sheet_name": "AGGREGATE",
+        "in_col": "Composite_Benchmark_SA",
+        "new_names": [f"{target}"],
+    },
+    num_lags=13,
+    lagged_cols=[f"{target} growth"],
+    transform_dict={f"{target}": growth(1)},
+)
+
+df_cov = df.join(
+    etl_pipeline(
+        extract_data_from_StatsCanada_CSV,
+        {
+            "file_path": f"{DATA_PATH}/34100145.csv",
+            "in_col": None,
+            "out_cols": ["Mortgage rate 5y"],
+        },
+        transform_dict={"Mortgage rate 5y": [np.log]},
+    )
+)
 
 
-ROOT_PATH = 'data'
+df_cov = df_cov.join(
+    etl_pipeline(
+        extract_data_from_StatsCanada_CSV,
+        {
+            "file_path": f"{DATA_PATH}/10100116.csv",
+            "in_col": "Assets, liabilities and monetary aggregates",
+            "out_cols": [
+                "M2++ (gross) (M2+ (gross), Canada Savings Bonds, non-money market mutual funds)",
+            ],
+            "new_names": ["M2++"],
+        },
+        transform_dict={
+            "M2++": [growth(1)],
+        },
+    )
+)
 
-df1 = etl_pipeline(extract_data_from_HS_json, file_path = f'{ROOT_PATH}/rent.json', cols = ['price_rent'], 
-                            new_names=['Median Rent Price'],  
-                            transform_dict = {"Median Rent Price" : growth(1)},
-                            num_lags = 13, 
-                            lagged_cols = ['Median Rent Price growth']
-                            )
-target = "Median Rent Price growth"
+target_toronto = "Toronto MLS Price Benchmark"
 
-df_cov = df1.join(etl_pipeline(extract_data_from_StatsCanada_API, vector_id = 1235049756, latest_n = 240, new_name = "Unemployment rate",
-                            transform_dict = {"Unemployment rate": [diff(1)],}
-                            ))
+df_cov = df_cov.join(
+    etl_pipeline(
+        extract_data_from_CREA,
+        {
+            "file_path": f"{DATA_PATH}/MLS_HPI/Not Seasonally Adjusted.xlsx",
+            "sheet_name": "Greater_Toronto",  #'GREATER_TORONTO',
+            "in_col": "Apartment_Benchmark",
+            "new_names": [target_toronto],
+        },
+        num_lags=13,
+        lagged_cols=[f"{target_toronto} growth"],
+        transform_dict={f"{target_toronto}": [growth(1)]},
+    )
+)
 
-df_cov = df_cov.join(etl_pipeline(extract_data_from_StatsCanada_API, vector_id = 111955499, latest_n = 240, new_name = "NHPI",
-                                     transform_dict = {"NHPI": [growth(1)]}))
+df_cov = df_cov.join(
+    etl_pipeline(
+        extract_data_from_HS_json,
+        {
+            "file_path": f"{DATA_PATH}/rent.json",
+            "cols": [
+                "sold_count",
+                "list_count",
+                "list_active",
+                "rent_count",
+                "rent_listing_count",
+            ],
+            "new_names": [
+                "Total Sold",
+                "New Listings",
+                "Active Listings",
+                "Total Leased",
+                "New Rent Listings",
+            ],
+        },
+        transform_dict={"Active Listings": [growth(1)]},
+    )
+)
 
-df_cov = df_cov.join(etl_pipeline(extract_data_from_HS_json, file_path = f'{ROOT_PATH}/rent.json', cols = ['rent_count', 'rent_listing_count'], 
-                            new_names=['Total Leased', "New Listings"]))
+df_cov["SNLR"] = df_cov["Total Sold"] / df_cov["New Listings"]
+df_cov = make_lags(df_cov, 12, ["SNLR"])
 
-df_cov["LNLR"] = df_cov["Total Leased"] / df_cov["New Listings"]
-df_cov = make_lags(df_cov, 12, ["LNLR",])
+
+target_rent = "Median Rent Price"
+
+df_cov = df_cov.join(
+    etl_pipeline(
+        extract_data_from_HS_json,
+        {
+            "file_path": f"{DATA_PATH}/rent.json",
+            "cols": ["price_rent"],
+            "new_names": [target_rent],
+        },
+        transform_dict={target_rent: growth(1)},
+        num_lags=13,
+        lagged_cols=[f"{target_rent} growth"],
+    )
+)
+df_cov = df_cov.join(
+    etl_pipeline(
+        extract_data_from_StatsCanada_API,
+        {"vector_id": 1235049756, "latest_n": 240, "new_name": "Unemployment rate"},
+        transform_dict={
+            "Unemployment rate": [diff(1)],
+        },
+    )
+)
+
+df_cov = df_cov.join(
+    etl_pipeline(
+        extract_data_from_StatsCanada_API,
+        {"vector_id": "111955499", "latest_n": 240, "new_name": "NHPI"},
+        transform_dict={"NHPI": [growth(1)]},
+    )
+)
+df_cov["LNLR"] = df_cov["Total Leased"] / df_cov["New Rent Listings"]
+df_cov = make_lags(df_cov, 12, ["LNLR"])
+
 df_cov = df_cov.ffill().bfill()
 df_cov = df_cov[sorted(df_cov.columns)]
 
 
-features = ["Unemployment rate diff", "NHPI growth", "LNLR", ] 
+features = ["Mortgage rate 5y log", "M2++ growth"]
 
-y = TimeSeries.from_dataframe(df_cov, value_cols=target)
-y1 = TimeSeries.from_dataframe(df_cov, value_cols="Median Rent Price")
-
-cov = TimeSeries.from_dataframe(df_cov, value_cols = features)
-
-LR = LinearRegressionModel(    
-    lags=12, 
-    lags_future_covariates={"Unemployment rate diff": [-5],  "NHPI growth": [-3,-15], "LNLR": [-3],  },  
-    output_chunk_length=1,)
+LR = LinearRegressionModel(
+    lags=2,
+    lags_future_covariates=[-6],
+    output_chunk_length=1,
+)
 
 
-LR.fit(y, future_covariates=cov)
-forecast = LR.predict(3, y, future_covariates=cov)
+def generate_forecast(df, target, features, model, horizon):
+    y = TimeSeries.from_dataframe(df, value_cols=f"{target} growth")
+    cov = TimeSeries.from_dataframe(df, value_cols=features)
+    model.fit(y, future_covariates=cov)
+    forecast = model.predict(horizon, y, future_covariates=cov)
+
+    return convert_forecast(df[[target]], forecast.pd_dataframe())
 
 
-def get_forecast(y, f, inverse_transform=True):
-    if inverse_transform:
-        to_exp = Mapper(lambda x: np.exp(x))
-        f = to_exp.transform(f.cumsum()) * y.last_value()
+generate_forecast(df_cov, target, features, LR, 6).to_csv(
+    f"{FORECAST_PATH}/forecast_hpi.csv", index=False
+)
 
-    f = f.with_columns_renamed(target, "Median Rent Price")
-    f = f.prepend_values([y.last_value()])
-    y = y.pd_dataframe().reset_index()
-    y['Data Type'] = 'Actual'
-    f = f.pd_dataframe().reset_index()
-    f['Data Type'] = 'Forecast'
+# Toronto Price Benchmark forecasting
+features = ["Mortgage rate 5y log", "SNLR", "Active Listings growth"]
 
-    df = pd.concat([y,f], ignore_index=True, axis=0)
-    df["Date"] = pd.to_datetime(df["Date"]).dt.date
-    df["Median Rent Price"] = df["Median Rent Price"].astype(int)
+LR = LinearRegressionModel(
+    lags=1,
+    lags_future_covariates=[-3],
+    output_chunk_length=1,
+)
 
-    return df
+generate_forecast(df_cov, target_toronto, features, LR, 3).to_csv(
+    f"{FORECAST_PATH}/forecast_hpi_toronto.csv", index=False
+)
 
-df = get_forecast(y1, forecast)
+features = ["Unemployment rate diff", "NHPI growth", "LNLR"]
+LR = LinearRegressionModel(
+    lags=12,
+    lags_future_covariates={
+        "Unemployment rate diff": [-5],
+        "NHPI growth": [-3, -15],
+        "LNLR": [-3],
+    },
+    output_chunk_length=1,
+)
 
-df.to_csv(f'{ROOT_PATH}/forecast.csv', index=False)
-df_cov.to_csv(f'{ROOT_PATH}/df_cov.csv')
+generate_forecast(df_cov, target_rent, features, LR, 3).to_csv(
+    f"{FORECAST_PATH}/forecast.csv", index=False
+)
+
+df_cov.to_csv(f"{FORECAST_PATH}/df_cov.csv")
