@@ -23,7 +23,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Run data download script
-        run: python download_data.py
+        run: python src/download_data.py
 
       - name: Run forecasting script
         run: python forecast.py
