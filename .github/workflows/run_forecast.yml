@@ -11,7 +11,7 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v4
@@ -33,7 +33,7 @@ jobs:
         with:
           name: data
           path: data/
-          
+
       - name: Upload Forecasts (Artifacts)
         uses: actions/upload-artifact@v3
         with:
