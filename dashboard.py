@@ -1,10 +1,43 @@
 import streamlit as st
-import pandas as pd
-
+import subprocess
+import os
 from src.dashboard import *
 
 
 FORECAST_PATH = "forecasts"
+
+
+# GitHub repo details
+GITHUB_REPO = "PakAndrey/Canada-RE-forecasting"
+BRANCH = "forecasts-branch"
+
+
+def fetch_latest_forecasts():
+    """Fetch the latest forecasts from the private branch."""
+    if not os.path.exists("forecasts"):
+        os.makedirs("forecasts")
+
+    # Clone only the forecasts branch
+    subprocess.run(
+        [
+            "git",
+            "clone",
+            "--depth",
+            "1",
+            "--branch",
+            BRANCH,
+            f"https://github.com/{GITHUB_REPO}.git",
+            "forecast_repo",
+        ],
+        check=True,
+    )
+
+    # Move forecasts from cloned repo
+    os.system("mv forecast_repo/forecasts/* forecasts/")
+    os.system("rm -rf forecast_repo")  # Clean up
+
+
+fetch_latest_forecasts()
 
 
 # Set the title and favicon that appear in the Browser's tab bar.
