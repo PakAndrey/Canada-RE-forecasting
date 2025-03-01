@@ -29,12 +29,12 @@ jobs:
         run: python forecast.py
         
       - name: Upload data folder as artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: data
           path: data/
       - name: Upload Forecasts (Artifacts)
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: forecasts
           path: forecasts/
