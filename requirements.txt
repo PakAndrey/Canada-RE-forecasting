@@ -19,4 +19,4 @@ unicodedata2==15.1.0
 yarg==0.1.9
 plotly==5.24.1
 streamlit==1.41.1
-# darts==0.32.0
+darts==0.32.0
