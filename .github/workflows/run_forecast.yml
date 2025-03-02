@@ -33,23 +33,37 @@ jobs:
         with:
           name: data
           path: data/
+
       - name: Upload Forecasts (Artifacts)
         uses: actions/upload-artifact@v4
         with:
           name: forecasts
           path: forecasts/
+
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0  # Fetch all branches
+
       - name: Push updated forecasts
         run: |
           git config --global user.email "github-actions@github.com"
           git config --global user.name "github-actions[bot]"
-          
-          git checkout forecasts-branch || git checkout -b forecasts-branch  # Checkout or create branch
-          git add forecasts/
-          
+
+          # Fetch all branches from remote
+          git fetch --all
+
+          # Checkout the branch if it exists, else create it
+          git checkout forecasts-branch || git checkout -b forecasts-branch
+
+          # Add the forecasts directory only if it exists
+          if [ -d "forecasts" ]; then
+              git add forecasts/
+          else
+              echo "forecasts directory does not exist, skipping git add."
+          fi
+
+          # Commit and push changes if there are any
           if git diff --cached --quiet; then
             echo "No changes to commit."
           else
