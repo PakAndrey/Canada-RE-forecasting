@@ -82,8 +82,6 @@ def plot_forecast(filtered_df, target):
 
     # Update layout
     fig.update_layout(
-        title="Forecast Plot",
-        # xaxis_title="Date",
         yaxis_title=target,
         yaxis=dict(range=[y_min, y_max], tickformat="$,.0f"),
         template="plotly_white",
