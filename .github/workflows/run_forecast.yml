@@ -40,23 +40,11 @@ jobs:
           name: forecasts
           path: forecasts/
 
-      - name: Checkout repository (main branch)
-        uses: actions/checkout@v4
-        with:
-          ref: main  # Ensure we're working with the main branch
-          fetch-depth: 0  # Fetch all branches to ensure we have the latest commits
-
       - name: Commit and Push to Main Branch
         run: |
           # Configure Git
           git config --global user.email "github-actions@github.com"
           git config --global user.name "github-actions[bot]"
-
-          # Fetch the latest changes
-          git fetch --all
-
-          # Checkout the main branch (no need to create a new branch)
-          git checkout main
 
           # Add all files in the 'forecasts' directory
           git add forecasts/*
