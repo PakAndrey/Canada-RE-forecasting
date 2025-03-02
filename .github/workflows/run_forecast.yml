@@ -55,7 +55,16 @@ jobs:
 
           # Checkout the branch if it exists, else create it
           git checkout forecasts-branch || git checkout -b forecasts-branch
+          
+          # List contents of forecasts directory for debugging
+          ls -al forecasts/
 
+          # Force Git to add all files (new or modified)
+          git add -A
+
+          # Check Git status
+          git status
+          
           # Add the forecasts directory only if it exists
           if [ -d "forecasts" ]; then
               git add forecasts/
