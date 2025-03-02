@@ -38,11 +38,21 @@ jobs:
         with:
           name: forecasts
           path: forecasts/
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Fetch all branches
       - name: Push updated forecasts
         run: |
           git config --global user.email "github-actions@github.com"
           git config --global user.name "github-actions[bot]"
-          git checkout forecasts-branch
+          
+          git checkout forecasts-branch || git checkout -b forecasts-branch  # Checkout or create branch
           git add forecasts/
-          git commit -m "Update forecasts for $(date +'%Y-%m')"
-          git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/PakAndrey/Canada-RE-forecasting.git forecasts-branch
+          
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+          else
+            git commit -m "Update forecasts for $(date +'%Y-%m')"
+            git push https://x-access-token:${{ secrets.GH_PAT }}@github.com/PakAndrey/Canada-RE-forecasting.git forecasts-branch
+          fi
