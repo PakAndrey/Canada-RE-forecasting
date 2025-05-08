@@ -13,7 +13,7 @@ target = "MLS Price Benchmark"
 df = etl_pipeline(
     extract_data_from_CREA,
     {
-        "file_path": f"{DATA_PATH}/MLS_HPI/Seasonally Adjusted.xlsx",
+        "file_path": f"{DATA_PATH}/MLS_HPI/Seasonally Adjusted (M).xlsx",
         "sheet_name": "AGGREGATE",
         "in_col": "Composite_Benchmark_SA",
         "new_names": [f"{target}"],
