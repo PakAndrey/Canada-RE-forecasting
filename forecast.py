@@ -60,7 +60,7 @@ df_cov = df_cov.join(
         extract_data_from_CREA,
         {
             "file_path": f"{DATA_PATH}/MLS_HPI/Not Seasonally Adjusted (M).xlsx",
-            "sheet_name": "Greater_Toronto",  #'GREATER_TORONTO',
+            "sheet_name": "GREATER_TORONTO",  # "Greater_Toronto",
             "in_col": "Apartment_Benchmark",
             "new_names": [target_toronto],
         },
