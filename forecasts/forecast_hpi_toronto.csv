@@ -243,6 +243,7 @@ Date,Toronto MLS Price Benchmark,Data Type
 2025-02-28,599100,Actual
 2025-03-31,601800,Actual
 2025-04-30,593000,Actual
-2025-05-31,588462,Forecast
-2025-06-30,585279,Forecast
-2025-07-31,583404,Forecast
+2025-05-31,593200,Actual
+2025-06-30,591947,Forecast
+2025-07-31,590897,Forecast
+2025-08-31,590338,Forecast
