@@ -155,7 +155,7 @@ def generate_forecast(df, target, features, model, horizon):
     model.fit(y, future_covariates=cov)
     forecast = model.predict(horizon, y, future_covariates=cov)
 
-    return convert_forecast(df[[target]], forecast.pd_dataframe())
+    return convert_forecast(df[[target]], forecast.to_dataframe())
 
 
 generate_forecast(df_cov, target, features, LR, 6).to_csv(
