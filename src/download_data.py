@@ -35,7 +35,14 @@ def download_StatsCanada_data(pid, data_path):
         print(f"Failed to connect to API. HTTP Status Code: {response.status_code}")
 
 
-tables = ["34100145", "10100116"]  # ["14100383", "18100205", "18100004"]
+tables = [
+    "34100145",
+    "10100116",
+    "18100256",
+    "14100383",
+    "18100205",
+    # "14100287",
+]  # ["14100383", "18100205", "18100004"]
 for table in tables:
     download_StatsCanada_data(table, f"{DATA_PATH}/")
 
@@ -66,17 +73,18 @@ def fetch_HS_data(token, file_name):
     if response.status_code == 200:
         # Parse the response JSON data
         data = response.json()
-        print("Data retrieved successfully!")
-
-        with open(file_name, "w") as f:
-            json.dump(data, f, indent=4)
-
-        # print(data)
+        
+        try:
+            with open(file_name, "w") as f:
+                json.dump(data, f, indent=4)
+        except Exception as e:
+            print(f"Error saving data to {file_name}: {e}")
+            print(data)
     else:
         print(f"Failed to retrieve data. Status code: {response.status_code}")
 
 
-fetch_HS_data("202410032b82hhl7p3rdgko64ct7kon7be", f"{DATA_PATH}/rent.json")
+fetch_HS_data("20250831cun49qi78j5ja29edg0r38pdhv", f"{DATA_PATH}/rent.json")
 
 
 def generate_MLS_HPI_links():
